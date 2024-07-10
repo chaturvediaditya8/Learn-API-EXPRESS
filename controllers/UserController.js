@@ -1,6 +1,8 @@
+const { JsonWebTokenError } = require("jsonwebtoken");
 const UserModel = require("../model/User");
 const cloudinary = require("cloudinary").v2;
 const bcrypt = require("bcrypt");
+const jwt = require('jsonwebtoken')
 cloudinary.config({
   cloud_name: "djjzy96fu",
   api_key: "248116893734283",
@@ -26,7 +28,7 @@ class UserController {
       // console.log(imageUpload)
       const { name, email, pass, cpass } = req.body;
       const user = await UserModel.findOne({ email: email });
-      // console.log(user)
+      console.log(user)
       if (user) {
         res
           .status(401)
@@ -81,5 +83,56 @@ class UserController {
       console.log(error);
     }
   };
+  static VerifyLogin = async(req,res)=>{
+    try {
+      // console.log(req.body)
+      const { email, pass } = req.body;
+      const user = await UserModel.findOne({ email: email });
+      // console.log(user)
+      if (user != null) {
+        const isMatch = await bcrypt.compare(pass, user.password);
+        // console.log(isMatch)
+        if (isMatch) {
+          if (user.role == "User") {
+            var token = jwt.sign({ ID: user._id }, "Aditya@1234");
+            // console.log(token)
+            res.cookie("Token", token);
+            res
+          .status(201)
+          .json({ status: "success", message: "Login Successful" });
+          
+          } else {
+            res
+            .status(401)
+            .json({ status: "failed", message: "Please verify your Email" });
+          }
+        } else {
+          res
+            .status(401)
+            .json({ status: "failed", message: "Invalid USername and Password" });
+        }
+      } else {
+        res
+        .status(401)
+        .json({ status: "failed", message: "You are not Registerd User" });
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  };
+  //display, view
+  static UserDisplay = async(req,res)=>{
+    try {
+      
+          const data = await UserModel.find();
+          //console.log(data);
+          res.status(200).json({
+            data,
+          });
+        
+    } catch (error) {
+      console.log(error)
+    }
+  } 
 }
 module.exports = UserController;
